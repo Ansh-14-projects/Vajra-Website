@@ -1,477 +1,2035 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+/* =========================================================
+   ANSH'S DRONE VAJRA
+   ULTRA FUTURISTIC COMMAND CENTER UI
+   ========================================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@400;500;600;700&display=swap');
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --cyan: #00f6ff;
+    --cyan2: #00a8ff;
+    --blue: #276cff;
+    --green: #00ff9d;
+    --red: #ff3155;
+    --yellow: #ffe600;
+    --purple: #a855ff;
+
+    --background: #02040a;
+    --panel: rgba(5, 14, 27, 0.86);
+    --panel2: rgba(8, 20, 37, 0.92);
+
+    --border: rgba(0, 246, 255, 0.24);
+
+    --text: #eaffff;
+    --muted: #6d91a6;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    min-height: 100vh;
+    background:
+        radial-gradient(circle at 50% -10%,
+            rgba(0, 246, 255, 0.15),
+            transparent 35%),
+        radial-gradient(circle at 0% 100%,
+            rgba(39, 108, 255, 0.12),
+            transparent 35%),
+        linear-gradient(
+            135deg,
+            #010309,
+            #03101c 45%,
+            #01050b
+        );
+
+    color: var(--text);
+    font-family: "Rajdhani", sans-serif;
 
-    <title>ANSH'S DRONE VAJRA</title>
+    overflow-x: hidden;
+}
 
-    <link rel="stylesheet" href="style.css">
-</head>
 
-<body>
+/* =========================================================
+   FUTURISTIC BACKGROUND
+   ========================================================= */
 
-<!-- ================= LOGIN ================= -->
+body::before {
+    content: "";
 
-<div id="loginPage" class="page-center">
+    position: fixed;
+    inset: 0;
 
-    <div class="login-card">
+    pointer-events: none;
 
-        <div class="logo">🚁⚡</div>
+    background-image:
+        linear-gradient(
+            rgba(0, 246, 255, 0.035) 1px,
+            transparent 1px
+        ),
+        linear-gradient(
+            90deg,
+            rgba(0, 246, 255, 0.035) 1px,
+            transparent 1px
+        );
 
-        <h1>VAJRA</h1>
-        <p class="login-subtitle">ANSH'S DRONE CONTROL SYSTEM</p>
+    background-size: 42px 42px;
 
-        <div class="input-group">
-            <label>USERNAME</label>
-            <input id="username" type="text" placeholder="Enter username">
-        </div>
+    mask-image:
+        linear-gradient(
+            to bottom,
+            black 0%,
+            rgba(0,0,0,.4) 70%,
+            transparent
+        );
 
-        <div class="input-group">
-            <label>PASSWORD</label>
-            <input id="password" type="password" placeholder="Enter password">
-        </div>
+    animation: gridMove 18s linear infinite;
+}
 
-        <button class="primary-button" onclick="login()">
-            ENTER VAJRA
-        </button>
+@keyframes gridMove {
 
-        <p id="loginMessage" class="login-message"></p>
+    from {
+        background-position: 0 0;
+    }
 
-    </div>
+    to {
+        background-position: 0 42px;
+    }
+}
 
-</div>
 
+body::after {
+    content: "";
 
-<!-- ================= DASHBOARD ================= -->
+    position: fixed;
 
-<div id="dashboardPage" class="hidden">
+    width: 500px;
+    height: 500px;
 
-    <header class="topbar">
+    border-radius: 50%;
 
-        <div class="brand">
-            <span>🚁</span>
-            <div>
-                <strong>ANSH'S DRONE VAJRA</strong>
-                <small>FLIGHT CONTROL SYSTEM</small>
-            </div>
-        </div>
+    left: 50%;
+    top: 40%;
 
-        <div class="status-area">
+    transform: translate(-50%, -50%);
 
-            <div id="bleStatus" class="status disconnected">
-                <span class="status-dot"></span>
-                DISCONNECTED
-            </div>
+    background:
+        radial-gradient(
+            circle,
+            rgba(0,246,255,.055),
+            transparent 65%
+        );
 
-            <button class="connect-btn" onclick="connectBLE()">
-                CONNECT BLE
-            </button>
+    pointer-events: none;
 
-            <button class="logout-btn" onclick="logout()">
-                LOGOUT
-            </button>
+    animation: pulseCore 5s ease-in-out infinite;
+}
 
-        </div>
+@keyframes pulseCore {
 
-    </header>
+    0%,100% {
+        opacity: .35;
+        transform: translate(-50%, -50%) scale(.95);
+    }
 
+    50% {
+        opacity: .75;
+        transform: translate(-50%, -50%) scale(1.08);
+    }
+}
 
-    <nav class="navigation">
 
-        <button onclick="showSection('controlSection')">CONTROL</button>
-        <button onclick="showSection('telemetrySection')">TELEMETRY</button>
-        <button onclick="showSection('settingsSection')">SETTINGS</button>
-        <button onclick="showSection('logsSection')">LOGS</button>
-        <button onclick="showSection('aboutSection')">ABOUT</button>
+.hidden {
+    display: none !important;
+}
 
-    </nav>
 
+/* =========================================================
+   LOGIN SCREEN
+   ========================================================= */
 
-    <main>
+.page-center {
 
-        <!-- ================= CONTROL ================= -->
+    min-height: 100vh;
 
-        <section id="controlSection" class="section active-section">
+    display: flex;
+    justify-content: center;
+    align-items: center;
 
-            <div class="section-header">
-                <h2>CONTROL CENTER</h2>
-                <span>EASY TO CONTROL</span>
-            </div>
+    padding: 25px;
 
+    position: relative;
+}
 
-            <div class="control-grid">
 
-                <!-- LEFT JOYSTICK -->
+.login-card {
 
-                <div class="joystick-panel">
+    width: 430px;
 
-                    <h3>THROTTLE + YAW</h3>
+    padding: 48px 42px;
 
-                    <div
-                        id="leftJoystick"
-                        class="joystick"
-                        data-joystick="left"
-                    >
+    position: relative;
 
-                        <div class="joystick-ring"></div>
-                        <div class="joystick-cross-horizontal"></div>
-                        <div class="joystick-cross-vertical"></div>
+    background:
+        linear-gradient(
+            145deg,
+            rgba(10,25,45,.94),
+            rgba(2,8,16,.97)
+        );
 
-                        <div
-                            id="leftStick"
-                            class="joystick-stick">
-                            ●
-                        </div>
+    border: 1px solid var(--border);
 
-                    </div>
+    border-radius: 28px;
 
-                    <div class="axis-readout">
-                        <div>THROTTLE: <span id="throttleValue">0</span></div>
-                        <div>YAW: <span id="yawValue">0</span></div>
-                    </div>
+    text-align: center;
 
-                </div>
+    box-shadow:
+        0 0 30px rgba(0,246,255,.09),
+        0 0 100px rgba(0,246,255,.04),
+        inset 0 0 35px rgba(0,246,255,.025);
 
+    backdrop-filter: blur(20px);
 
-                <!-- RIGHT JOYSTICK -->
+    overflow: hidden;
 
-                <div class="joystick-panel">
+    animation: loginAppear .8s ease;
+}
 
-                    <h3>PITCH + ROLL</h3>
 
-                    <div
-                        id="rightJoystick"
-                        class="joystick"
-                        data-joystick="right"
-                    >
+@keyframes loginAppear {
 
-                        <div class="joystick-ring"></div>
-                        <div class="joystick-cross-horizontal"></div>
-                        <div class="joystick-cross-vertical"></div>
+    from {
+        opacity: 0;
+        transform: scale(.92) translateY(25px);
+    }
 
-                        <div
-                            id="rightStick"
-                            class="joystick-stick">
-                            ●
-                        </div>
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
 
-                    </div>
 
-                    <div class="axis-readout">
-                        <div>PITCH: <span id="pitchValue">0</span></div>
-                        <div>ROLL: <span id="rollValue">0</span></div>
-                    </div>
+.login-card::before {
 
-                </div>
+    content: "";
 
+    position: absolute;
 
-                <!-- ATTITUDE -->
+    top: 0;
+    left: 15%;
+    right: 15%;
 
-                <div class="attitude-panel">
+    height: 2px;
 
-                    <h3>ATTITUDE</h3>
+    background:
+        linear-gradient(
+            90deg,
+            transparent,
+            var(--cyan),
+            transparent
+        );
 
-                    <div class="attitude-box">
+    box-shadow:
+        0 0 15px var(--cyan);
+}
 
-                        <div>
-                            <span>ROLL</span>
-                            <strong id="attitudeRoll">0.00°</strong>
-                        </div>
 
-                        <div>
-                            <span>PITCH</span>
-                            <strong id="attitudePitch">0.00°</strong>
-                        </div>
+.login-card::after {
 
-                    </div>
+    content: "";
 
-                </div>
+    position: absolute;
 
-            </div>
+    inset: 0;
 
+    border-radius: 28px;
 
-            <!-- ARM CONTROLS -->
+    pointer-events: none;
 
-            <div class="flight-controls">
+    background:
+        linear-gradient(
+            90deg,
+            transparent 0%,
+            rgba(0,246,255,.05) 50%,
+            transparent 100%
+        );
 
-                <button
-                    class="start-button"
-                    onclick="sendCommand('VAJRA:START')">
-                    START / ARM
-                </button>
+    animation: scan 4s linear infinite;
+}
 
-                <button
-                    class="stop-button"
-                    onclick="stopAll()">
-                    STOP ALL
-                </button>
+@keyframes scan {
 
-            </div>
+    0% {
+        transform: translateX(-100%);
+    }
 
+    100% {
+        transform: translateX(100%);
+    }
+}
 
-            <!-- MOTOR CONTROL -->
 
-            <div class="motor-panel">
+.logo {
 
-                <h3>MOTOR CONTROL</h3>
+    font-size: 72px;
 
-                <div class="motors-grid">
+    margin-bottom: 10px;
 
-                    <div class="motor-card">
-                        <h4>M1</h4>
-                        <span>FRONT RIGHT</span>
+    filter:
+        drop-shadow(0 0 8px var(--cyan))
+        drop-shadow(0 0 20px rgba(0,246,255,.5));
 
-                        <input
-                            id="m1Slider"
-                            type="range"
-                            min="900"
-                            max="2000"
-                            value="900"
-                            oninput="motorSliderChanged(1)"
-                        >
+    animation: droneFloat 3s ease-in-out infinite;
+}
 
-                        <strong id="m1Value">900 µs</strong>
 
-                        <button onclick="sendMotor(1)">
-                            SEND
-                        </button>
-                    </div>
+@keyframes droneFloat {
 
+    0%,100% {
+        transform: translateY(0);
+    }
 
-                    <div class="motor-card">
-                        <h4>M2</h4>
-                        <span>REAR RIGHT</span>
+    50% {
+        transform: translateY(-8px);
+    }
+}
 
-                        <input
-                            id="m2Slider"
-                            type="range"
-                            min="900"
-                            max="2000"
-                            value="900"
-                            oninput="motorSliderChanged(2)"
-                        >
 
-                        <strong id="m2Value">900 µs</strong>
+.login-card h1 {
 
-                        <button onclick="sendMotor(2)">
-                            SEND
-                        </button>
-                    </div>
+    font-family: "Orbitron", sans-serif;
 
+    font-size: 52px;
 
-                    <div class="motor-card">
-                        <h4>M3</h4>
-                        <span>REAR LEFT</span>
+    letter-spacing: 10px;
 
-                        <input
-                            id="m3Slider"
-                            type="range"
-                            min="900"
-                            max="2000"
-                            value="900"
-                            oninput="motorSliderChanged(3)"
-                        >
+    color: var(--cyan);
 
-                        <strong id="m3Value">900 µs</strong>
+    text-shadow:
+        0 0 8px rgba(0,246,255,.9),
+        0 0 25px rgba(0,246,255,.45);
 
-                        <button onclick="sendMotor(3)">
-                            SEND
-                        </button>
-                    </div>
+}
 
 
-                    <div class="motor-card">
-                        <h4>M4</h4>
-                        <span>FRONT LEFT</span>
+.login-subtitle {
 
-                        <input
-                            id="m4Slider"
-                            type="range"
-                            min="900"
-                            max="2000"
-                            value="900"
-                            oninput="motorSliderChanged(4)"
-                        >
+    font-size: 12px;
 
-                        <strong id="m4Value">900 µs</strong>
+    letter-spacing: 4px;
 
-                        <button onclick="sendMotor(4)">
-                            SEND
-                        </button>
-                    </div>
+    color: var(--muted);
 
-                </div>
+    margin-top: 8px;
 
-            </div>
+    margin-bottom: 35px;
+}
 
-        </section>
 
+.input-group {
+    text-align: left;
+    margin-bottom: 18px;
+}
 
-        <!-- ================= TELEMETRY ================= -->
 
-        <section id="telemetrySection" class="section">
+.input-group label {
 
-            <div class="section-header">
-                <h2>TELEMETRY</h2>
-                <span>LIVE FLIGHT DATA</span>
-            </div>
+    display: block;
 
-            <div class="telemetry-grid">
+    margin-bottom: 7px;
 
-                <div class="telemetry-card">
-                    <span>ROLL</span>
-                    <strong id="telRoll">0.00</strong>
-                    <small>deg</small>
-                </div>
+    font-family: "Orbitron", sans-serif;
 
-                <div class="telemetry-card">
-                    <span>PITCH</span>
-                    <strong id="telPitch">0.00</strong>
-                    <small>deg</small>
-                </div>
+    font-size: 10px;
 
-                <div class="telemetry-card">
-                    <span>GYRO X</span>
-                    <strong id="telGx">0.00</strong>
-                    <small>dps</small>
-                </div>
+    letter-spacing: 2px;
 
-                <div class="telemetry-card">
-                    <span>GYRO Y</span>
-                    <strong id="telGy">0.00</strong>
-                    <small>dps</small>
-                </div>
+    color: var(--cyan);
+}
 
-                <div class="telemetry-card">
-                    <span>GYRO Z</span>
-                    <strong id="telGz">0.00</strong>
-                    <small>dps</small>
-                </div>
 
-                <div class="telemetry-card">
-                    <span>M1</span>
-                    <strong id="telM1">900</strong>
-                    <small>µs</small>
-                </div>
+.input-group input {
 
-                <div class="telemetry-card">
-                    <span>M2</span>
-                    <strong id="telM2">900</strong>
-                    <small>µs</small>
-                </div>
+    width: 100%;
 
-                <div class="telemetry-card">
-                    <span>M3</span>
-                    <strong id="telM3">900</strong>
-                    <small>µs</small>
-                </div>
+    height: 52px;
 
-                <div class="telemetry-card">
-                    <span>M4</span>
-                    <strong id="telM4">900</strong>
-                    <small>µs</small>
-                </div>
+    border-radius: 12px;
 
-                <div class="telemetry-card">
-                    <span>ROLL PID</span>
-                    <strong id="telRollPID">0.00</strong>
-                    <small>output</small>
-                </div>
+    border: 1px solid rgba(0,246,255,.18);
 
-                <div class="telemetry-card">
-                    <span>PITCH PID</span>
-                    <strong id="telPitchPID">0.00</strong>
-                    <small>output</small>
-                </div>
+    outline: none;
 
-            </div>
+    padding: 0 16px;
 
-        </section>
+    color: white;
 
+    background:
+        rgba(0,10,20,.8);
 
-        <!-- ================= SETTINGS ================= -->
+    font-family: "Rajdhani", sans-serif;
 
-        <section id="settingsSection" class="section">
+    font-size: 17px;
 
-            <div class="section-header">
-                <h2>SETTINGS</h2>
-            </div>
+    transition: .25s;
+}
 
-            <div class="settings-card">
 
-                <h3>VAJRA CONNECTION</h3>
+.input-group input:focus {
 
-                <p>BLE Device:</p>
-                <strong>ANSH'S DRONE VAJRA</strong>
+    border-color: var(--cyan);
 
-                <p>Service UUID:</p>
-                <code>12345678-1234-1234-1234-1234567890ab</code>
+    box-shadow:
+        0 0 12px rgba(0,246,255,.15),
+        inset 0 0 15px rgba(0,246,255,.04);
+}
 
-                <p>RX UUID:</p>
-                <code>12345678-1234-1234-1234-1234567890ac</code>
 
-                <p>TX UUID:</p>
-                <code>12345678-1234-1234-1234-1234567890ad</code>
+.primary-button {
 
-            </div>
+    width: 100%;
 
-        </section>
+    height: 55px;
 
+    margin-top: 10px;
 
-        <!-- ================= LOGS ================= -->
+    border: none;
 
-        <section id="logsSection" class="section">
+    border-radius: 13px;
 
-            <div class="section-header">
-                <h2>SYSTEM LOGS</h2>
-            </div>
+    cursor: pointer;
 
-            <div id="logsBox" class="logs-box"></div>
+    font-family: "Orbitron", sans-serif;
 
-            <button class="secondary-button" onclick="clearLogs()">
-                CLEAR LOGS
-            </button>
+    font-size: 13px;
 
-        </section>
+    font-weight: 700;
 
+    letter-spacing: 2px;
 
-        <!-- ================= ABOUT ================= -->
+    color: #001116;
 
-        <section id="aboutSection" class="section">
+    background:
+        linear-gradient(
+            90deg,
+            var(--cyan),
+            #51d8ff,
+            var(--blue)
+        );
 
-            <div class="about-card">
+    box-shadow:
+        0 0 20px rgba(0,246,255,.25);
 
-                <div class="about-logo">🚁⚡</div>
+    transition: .2s;
+}
 
-                <h2>ANSH'S DRONE VAJRA</h2>
 
-                <p>
-                    Two-controller quadcopter flight-control project.
-                </p>
+.primary-button:hover {
 
-                <p>
-                    Main Controller → BLE + UART
-                </p>
+    transform: translateY(-2px);
 
-                <p>
-                    Flight Controller → MPU6050 + ESC + PID
-                </p>
+    box-shadow:
+        0 0 25px rgba(0,246,255,.45);
+}
 
-                <p>
-                    Designed by Ansh's Innovation Lab
-                </p>
 
-            </div>
+.primary-button:active {
+    transform: scale(.98);
+}
 
-        </section>
 
-    </main>
+.login-message {
 
-</div>
+    min-height: 22px;
 
+    margin-top: 15px;
 
-<script src="script.js"></script>
+    color: var(--red);
 
-</body>
-</html>
+    font-family: "Orbitron", sans-serif;
+
+    font-size: 11px;
+
+    letter-spacing: 1px;
+}
+
+
+/* =========================================================
+   TOP BAR
+   ========================================================= */
+
+.topbar {
+
+    min-height: 92px;
+
+    padding: 15px 27px;
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    gap: 20px;
+
+    position: sticky;
+    top: 0;
+
+    z-index: 100;
+
+    background:
+        rgba(1,7,14,.89);
+
+    backdrop-filter: blur(18px);
+
+    border-bottom:
+        1px solid rgba(0,246,255,.16);
+
+    box-shadow:
+        0 10px 45px rgba(0,0,0,.3);
+}
+
+
+.brand {
+
+    display: flex;
+    align-items: center;
+    gap: 13px;
+}
+
+
+.brand > span {
+
+    width: 50px;
+    height: 50px;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    border-radius: 14px;
+
+    background:
+        rgba(0,246,255,.08);
+
+    border:
+        1px solid rgba(0,246,255,.22);
+
+    box-shadow:
+        0 0 18px rgba(0,246,255,.08);
+
+    font-size: 27px;
+}
+
+
+.brand strong {
+
+    display: block;
+
+    font-family: "Orbitron", sans-serif;
+
+    font-size: 15px;
+
+    letter-spacing: 2px;
+
+    color: var(--cyan);
+
+    text-shadow:
+        0 0 12px rgba(0,246,255,.4);
+}
+
+
+.brand small {
+
+    display: block;
+
+    margin-top: 5px;
+
+    color: var(--muted);
+
+    letter-spacing: 3px;
+
+    font-size: 9px;
+}
+
+
+/* =========================================================
+   CONNECTION STATUS
+   ========================================================= */
+
+.status-area {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 9px;
+
+    flex-wrap: wrap;
+}
+
+
+.status {
+
+    height: 40px;
+
+    padding: 0 14px;
+
+    display: flex;
+
+    align-items: center;
+
+    border-radius: 999px;
+
+    font-family: "Orbitron", sans-serif;
+
+    font-size: 10px;
+
+    letter-spacing: 1px;
+
+    border: 1px solid;
+
+    background: rgba(0,0,0,.3);
+}
+
+
+.status-dot {
+
+    width: 8px;
+    height: 8px;
+
+    margin-right: 7px;
+
+    border-radius: 50%;
+}
+
+
+.disconnected {
+
+    color: var(--red);
+
+    border-color:
+        rgba(255,49,85,.35);
+}
+
+
+.disconnected .status-dot {
+
+    background: var(--red);
+
+    box-shadow:
+        0 0 8px var(--red);
+}
+
+
+.connected {
+
+    color: var(--green);
+
+    border-color:
+        rgba(0,255,157,.4);
+
+    box-shadow:
+        0 0 15px rgba(0,255,157,.07);
+
+    animation: connectedPulse 2s infinite;
+}
+
+
+.connected .status-dot {
+
+    background: var(--green);
+
+    box-shadow:
+        0 0 6px var(--green),
+        0 0 15px var(--green);
+}
+
+
+@keyframes connectedPulse {
+
+    0%,100% {
+        box-shadow:
+            0 0 5px rgba(0,255,157,.03);
+    }
+
+    50% {
+        box-shadow:
+            0 0 20px rgba(0,255,157,.12);
+    }
+}
+
+
+.connect-btn,
+.logout-btn {
+
+    height: 40px;
+
+    border-radius: 10px;
+
+    padding: 0 15px;
+
+    font-family: "Orbitron", sans-serif;
+
+    font-size: 9px;
+
+    font-weight: 700;
+
+    letter-spacing: 1px;
+
+    cursor: pointer;
+
+    transition: .2s;
+}
+
+
+.connect-btn {
+
+    color: var(--cyan);
+
+    border:
+        1px solid rgba(0,246,255,.25);
+
+    background:
+        rgba(0,246,255,.07);
+}
+
+
+.connect-btn:hover {
+
+    background:
+        rgba(0,246,255,.15);
+
+    box-shadow:
+        0 0 15px rgba(0,246,255,.1);
+}
+
+
+.logout-btn {
+
+    color: var(--red);
+
+    border:
+        1px solid rgba(255,49,85,.25);
+
+    background:
+        rgba(255,49,85,.05);
+}
+
+
+/* =========================================================
+   NAVIGATION
+   ========================================================= */
+
+.navigation {
+
+    display: flex;
+
+    gap: 7px;
+
+    padding: 13px 23px;
+
+    position: sticky;
+
+    top: 92px;
+
+    z-index: 90;
+
+    overflow-x: auto;
+
+    background:
+        rgba(2,7,13,.82);
+
+    backdrop-filter: blur(14px);
+
+    border-bottom:
+        1px solid rgba(0,246,255,.08);
+}
+
+
+.navigation button {
+
+    position: relative;
+
+    border: none;
+
+    padding: 12px 18px;
+
+    border-radius: 9px;
+
+    background:
+        transparent;
+
+    color: var(--muted);
+
+    cursor: pointer;
+
+    font-family: "Orbitron", sans-serif;
+
+    font-size: 9px;
+
+    letter-spacing: 1px;
+
+    transition: .2s;
+
+    white-space: nowrap;
+}
+
+
+.navigation button::after {
+
+    content: "";
+
+    position: absolute;
+
+    left: 50%;
+    bottom: 3px;
+
+    width: 0;
+
+    height: 2px;
+
+    transform: translateX(-50%);
+
+    background: var(--cyan);
+
+    box-shadow:
+        0 0 10px var(--cyan);
+
+    transition: .25s;
+}
+
+
+.navigation button:hover {
+
+    color: var(--cyan);
+
+    background:
+        rgba(0,246,255,.045);
+}
+
+
+.navigation button:hover::after {
+    width: 65%;
+}
+
+
+/* =========================================================
+   MAIN
+   ========================================================= */
+
+main {
+
+    padding: 25px;
+
+    position: relative;
+
+    z-index: 2;
+}
+
+
+.section {
+
+    display: none;
+
+    max-width: 1500px;
+
+    margin: auto;
+
+    animation: sectionIn .4s ease;
+}
+
+
+.active-section {
+    display: block;
+}
+
+
+@keyframes sectionIn {
+
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+
+.section-header {
+
+    display: flex;
+
+    justify-content: space-between;
+    align-items: center;
+
+    margin-bottom: 22px;
+
+    padding-bottom: 13px;
+
+    border-bottom:
+        1px solid rgba(0,246,255,.11);
+}
+
+
+.section-header h2 {
+
+    font-family: "Orbitron", sans-serif;
+
+    font-size: 24px;
+
+    letter-spacing: 2px;
+
+    color: white;
+
+    text-shadow:
+        0 0 13px rgba(0,246,255,.28);
+}
+
+
+.section-header h2::before {
+
+    content: "▸ ";
+
+    color: var(--cyan);
+}
+
+
+.section-header span {
+
+    color: var(--cyan);
+
+    font-family: "Orbitron", sans-serif;
+
+    font-size: 9px;
+
+    letter-spacing: 2px;
+}
+
+
+/* =========================================================
+   GLASS PANELS
+   ========================================================= */
+
+.joystick-panel,
+.attitude-panel,
+.motor-panel,
+.settings-card,
+.about-card {
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(10,27,46,.85),
+            rgba(3,9,17,.92)
+        );
+
+    border:
+        1px solid rgba(0,246,255,.13);
+
+    border-radius: 20px;
+
+    box-shadow:
+        inset 0 0 35px rgba(0,246,255,.018),
+        0 15px 40px rgba(0,0,0,.14);
+
+    backdrop-filter: blur(12px);
+
+    position: relative;
+
+    overflow: hidden;
+}
+
+
+.joystick-panel::before,
+.attitude-panel::before,
+.motor-panel::before {
+
+    content: "";
+
+    position: absolute;
+
+    width: 80px;
+    height: 80px;
+
+    right: -35px;
+    top: -35px;
+
+    border-radius: 50%;
+
+    border:
+        1px solid rgba(0,246,255,.12);
+}
+
+
+/* =========================================================
+   JOYSTICKS
+   ========================================================= */
+
+.control-grid {
+
+    display: grid;
+
+    grid-template-columns:
+        1fr 1fr;
+
+    gap: 18px;
+}
+
+
+.joystick-panel {
+
+    padding: 25px;
+
+    text-align: center;
+}
+
+
+.joystick-panel h3,
+.attitude-panel h3,
+.motor-panel h3 {
+
+    font-family: "Orbitron", sans-serif;
+
+    color: var(--cyan);
+
+    font-size: 12px;
+
+    letter-spacing: 2px;
+
+    margin-bottom: 20px;
+}
+
+
+.joystick {
+
+    position: relative;
+
+    width: min(310px, 72vw);
+
+    aspect-ratio: 1;
+
+    margin: auto;
+
+    border-radius: 50%;
+
+    background:
+        radial-gradient(
+            circle,
+            rgba(0,246,255,.085) 0%,
+            rgba(4,21,36,.95) 48%,
+            rgba(1,7,14,.98) 72%
+        );
+
+    border:
+        2px solid rgba(0,246,255,.28);
+
+    box-shadow:
+
+        inset
+            0 0 35px
+            rgba(0,246,255,.09),
+
+        0 0 25px
+            rgba(0,246,255,.08);
+
+    touch-action: none;
+
+    user-select: none;
+}
+
+
+.joystick::before {
+
+    content: "";
+
+    position: absolute;
+
+    inset: 9%;
+
+    border-radius: 50%;
+
+    border:
+        1px dashed
+        rgba(0,246,255,.2);
+
+    animation:
+        radarRotate 18s linear infinite;
+}
+
+
+@keyframes radarRotate {
+
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+
+.joystick-ring {
+
+    position: absolute;
+
+    inset: 19%;
+
+    border:
+        1px solid rgba(0,246,255,.2);
+
+    border-radius: 50%;
+}
+
+
+.joystick-cross-horizontal {
+
+    position: absolute;
+
+    left: 8%;
+    right: 8%;
+
+    top: 50%;
+
+    height: 1px;
+
+    background:
+        rgba(0,246,255,.18);
+}
+
+
+.joystick-cross-vertical {
+
+    position: absolute;
+
+    top: 8%;
+    bottom: 8%;
+
+    left: 50%;
+
+    width: 1px;
+
+    background:
+        rgba(0,246,255,.18);
+}
+
+
+.joystick-stick {
+
+    width: 82px;
+    height: 82px;
+
+    position: absolute;
+
+    left: 50%;
+    top: 50%;
+
+    transform:
+        translate(-50%, -50%);
+
+    border-radius: 50%;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    color: white;
+
+    font-size: 38px;
+
+    background:
+        radial-gradient(
+            circle at 35% 25%,
+            #baffff,
+            #12dfff 35%,
+            #0082ae 68%,
+            #003e52
+        );
+
+    border:
+        3px solid rgba(255,255,255,.45);
+
+    box-shadow:
+
+        0 0 18px
+            rgba(0,246,255,.55),
+
+        0 0 45px
+            rgba(0,246,255,.25),
+
+        inset
+        0 0 12px
+            rgba(255,255,255,.3);
+
+    pointer-events: none;
+
+    z-index: 5;
+
+    transition:
+        box-shadow .15s;
+}
+
+
+.joystick-panel:hover
+.joystick-stick {
+
+    box-shadow:
+
+        0 0 22px
+            rgba(0,246,255,.75),
+
+        0 0 55px
+            rgba(0,246,255,.35);
+}
+
+
+.axis-readout {
+
+    display: grid;
+
+    grid-template-columns:
+        1fr 1fr;
+
+    gap: 10px;
+
+    margin-top: 18px;
+}
+
+
+.axis-readout div {
+
+    padding: 11px;
+
+    border-radius: 10px;
+
+    background:
+        rgba(0,246,255,.035);
+
+    border:
+        1px solid rgba(0,246,255,.09);
+
+    color: var(--muted);
+
+    font-family: "Orbitron", sans-serif;
+
+    font-size: 9px;
+
+    letter-spacing: 1px;
+}
+
+
+.axis-readout span {
+
+    display: block;
+
+    margin-top: 5px;
+
+    color: var(--green);
+
+    font-size: 15px;
+}
+
+
+/* =========================================================
+   ATTITUDE
+   ========================================================= */
+
+.attitude-panel {
+
+    grid-column: span 2;
+
+    padding: 22px;
+}
+
+
+.attitude-box {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(2, 1fr);
+
+    gap: 15px;
+}
+
+
+.attitude-box div {
+
+    position: relative;
+
+    padding: 23px;
+
+    border-radius: 15px;
+
+    background:
+        rgba(0,246,255,.035);
+
+    border:
+        1px solid rgba(0,246,255,.11);
+
+    text-align: center;
+}
+
+
+.attitude-box span {
+
+    display: block;
+
+    color: var(--muted);
+
+    font-family: "Orbitron", sans-serif;
+
+    font-size: 9px;
+
+    letter-spacing: 2px;
+}
+
+
+.attitude-box strong {
+
+    display: block;
+
+    margin-top: 10px;
+
+    color: var(--cyan);
+
+    font-family: "Orbitron", sans-serif;
+
+    font-size: 30px;
+
+    text-shadow:
+        0 0 15px rgba(0,246,255,.3);
+}
+
+
+/* =========================================================
+   ARM / STOP
+   ========================================================= */
+
+.flight-controls {
+
+    display: flex;
+
+    justify-content: center;
+
+    gap: 15px;
+
+    margin: 20px 0;
+}
+
+
+.start-button,
+.stop-button {
+
+    min-width: 200px;
+
+    height: 52px;
+
+    border-radius: 12px;
+
+    font-family: "Orbitron", sans-serif;
+
+    font-size: 11px;
+
+    font-weight: 700;
+
+    letter-spacing: 2px;
+
+    cursor: pointer;
+
+    transition: .2s;
+}
+
+
+.start-button {
+
+    color: var(--green);
+
+    border:
+        1px solid rgba(0,255,157,.3);
+
+    background:
+        linear-gradient(
+            180deg,
+            rgba(0,255,157,.12),
+            rgba(0,255,157,.035)
+        );
+
+    box-shadow:
+        0 0 20px rgba(0,255,157,.04);
+}
+
+
+.start-button:hover {
+
+    background:
+        rgba(0,255,157,.18);
+
+    box-shadow:
+        0 0 25px rgba(0,255,157,.14);
+
+    transform: translateY(-2px);
+}
+
+
+.stop-button {
+
+    color: var(--red);
+
+    border:
+        1px solid rgba(255,49,85,.3);
+
+    background:
+        linear-gradient(
+            180deg,
+            rgba(255,49,85,.13),
+            rgba(255,49,85,.035)
+        );
+}
+
+
+.stop-button:hover {
+
+    background:
+        rgba(255,49,85,.2);
+
+    box-shadow:
+        0 0 25px rgba(255,49,85,.15);
+
+    transform: translateY(-2px);
+}
+
+
+/* =========================================================
+   MOTOR CONTROL
+   ========================================================= */
+
+.motor-panel {
+
+    padding: 22px;
+}
+
+
+.motors-grid {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(4, 1fr);
+
+    gap: 13px;
+}
+
+
+.motor-card {
+
+    position: relative;
+
+    padding: 19px;
+
+    border-radius: 16px;
+
+    text-align: center;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(9,27,44,.9),
+            rgba(2,9,17,.95)
+        );
+
+    border:
+        1px solid rgba(0,246,255,.1);
+
+    transition: .2s;
+}
+
+
+.motor-card:hover {
+
+    border-color:
+        rgba(0,246,255,.27);
+
+    transform: translateY(-3px);
+
+    box-shadow:
+        0 10px 25px rgba(0,0,0,.2),
+        0 0 20px rgba(0,246,255,.05);
+}
+
+
+.motor-card h4 {
+
+    font-family: "Orbitron", sans-serif;
+
+    font-size: 23px;
+
+    color: var(--cyan);
+
+    text-shadow:
+        0 0 10px rgba(0,246,255,.35);
+}
+
+
+.motor-card span {
+
+    display: block;
+
+    margin-top: 5px;
+
+    margin-bottom: 18px;
+
+    color: var(--muted);
+
+    font-family: "Orbitron", sans-serif;
+
+    font-size: 7px;
+
+    letter-spacing: 1px;
+}
+
+
+.motor-card input[type="range"] {
+
+    appearance: none;
+
+    width: 100%;
+
+    height: 5px;
+
+    border-radius: 999px;
+
+    background:
+        linear-gradient(
+            90deg,
+            var(--cyan),
+            var(--blue)
+        );
+
+    outline: none;
+}
+
+
+.motor-card input[type="range"]::-webkit-slider-thumb {
+
+    appearance: none;
+
+    width: 18px;
+    height: 18px;
+
+    border-radius: 50%;
+
+    background: #eaffff;
+
+    border:
+        2px solid var(--cyan);
+
+    box-shadow:
+        0 0 12px var(--cyan);
+
+    cursor: pointer;
+}
+
+
+.motor-card strong {
+
+    display: block;
+
+    margin: 13px 0;
+
+    color: var(--green);
+
+    font-family: "Orbitron", sans-serif;
+
+    font-size: 12px;
+
+    letter-spacing: 1px;
+}
+
+
+.motor-card button {
+
+    width: 100%;
+
+    height: 35px;
+
+    border-radius: 8px;
+
+    color: var(--cyan);
+
+    background:
+        rgba(0,246,255,.05);
+
+    border:
+        1px solid rgba(0,246,255,.15);
+
+    font-family: "Orbitron", sans-serif;
+
+    font-size: 8px;
+
+    font-weight: 700;
+
+    cursor: pointer;
+
+    transition: .2s;
+}
+
+
+.motor-card button:hover {
+
+    background:
+        rgba(0,246,255,.12);
+
+    box-shadow:
+        0 0 14px rgba(0,246,255,.08);
+}
+
+
+/* =========================================================
+   TELEMETRY
+   ========================================================= */
+
+.telemetry-grid {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(4, 1fr);
+
+    gap: 14px;
+}
+
+
+.telemetry-card {
+
+    min-height: 120px;
+
+    padding: 20px;
+
+    border-radius: 17px;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(9,25,43,.9),
+            rgba(2,8,15,.95)
+        );
+
+    border:
+        1px solid rgba(0,246,255,.12);
+
+    position: relative;
+
+    overflow: hidden;
+
+    transition: .2s;
+}
+
+
+.telemetry-card::after {
+
+    content: "";
+
+    position: absolute;
+
+    left: 0;
+    right: 0;
+    bottom: 0;
+
+    height: 2px;
+
+    background:
+        linear-gradient(
+            90deg,
+            transparent,
+            var(--cyan),
+            transparent
+        );
+
+    opacity: .45;
+}
+
+
+.telemetry-card:hover {
+
+    transform: translateY(-3px);
+
+    border-color:
+        rgba(0,246,255,.25);
+
+    box-shadow:
+        0 10px 30px rgba(0,0,0,.2),
+        0 0 20px rgba(0,246,255,.04);
+}
+
+
+.telemetry-card span {
+
+    color: var(--muted);
+
+    font-family: "Orbitron", sans-serif;
+
+    font-size: 8px;
+
+    letter-spacing: 2px;
+}
+
+
+.telemetry-card strong {
+
+    display: block;
+
+    margin-top: 10px;
+
+    font-family: "Orbitron", sans-serif;
+
+    color: var(--cyan);
+
+    font-size: 27px;
+
+    text-shadow:
+        0 0 12px rgba(0,246,255,.3);
+}
+
+
+.telemetry-card small {
+
+    color: var(--muted);
+
+    font-size: 10px;
+}
+
+
+/* =========================================================
+   SETTINGS
+   ========================================================= */
+
+.settings-card {
+
+    padding: 28px;
+
+    line-height: 1.9;
+}
+
+
+.settings-card h3 {
+
+    font-family: "Orbitron", sans-serif;
+
+    color: var(--cyan);
+
+    font-size: 14px;
+
+    letter-spacing: 2px;
+
+    margin-bottom: 15px;
+}
+
+
+.settings-card p {
+
+    color: var(--muted);
+
+    margin-top: 10px;
+}
+
+
+.settings-card strong {
+
+    color: white;
+}
+
+
+.settings-card code {
+
+    display: block;
+
+    padding: 10px;
+
+    border-radius: 8px;
+
+    background:
+        #01050a;
+
+    border:
+        1px solid rgba(0,246,255,.08);
+
+    color: var(--green);
+
+    overflow-wrap: anywhere;
+
+    font-family: monospace;
+
+    font-size: 11px;
+}
+
+
+/* =========================================================
+   LOGS
+   ========================================================= */
+
+.logs-box {
+
+    min-height: 420px;
+
+    max-height: 520px;
+
+    overflow: auto;
+
+    padding: 20px;
+
+    border-radius: 17px;
+
+    background:
+        #01050a;
+
+    border:
+        1px solid rgba(0,246,255,.12);
+
+    color: #94eeff;
+
+    font-family: monospace;
+
+    font-size: 12px;
+
+    line-height: 1.8;
+
+    box-shadow:
+        inset
+        0 0 30px
+        rgba(0,246,255,.025);
+}
+
+
+.logs-box::-webkit-scrollbar {
+    width: 7px;
+}
+
+
+.logs-box::-webkit-scrollbar-thumb {
+
+    background:
+        rgba(0,246,255,.25);
+
+    border-radius: 999px;
+}
+
+
+.secondary-button {
+
+    margin-top: 13px;
+
+    padding: 11px 18px;
+
+    border-radius: 9px;
+
+    color: var(--cyan);
+
+    background:
+        rgba(0,246,255,.06);
+
+    border:
+        1px solid rgba(0,246,255,.15);
+
+    font-family: "Orbitron", sans-serif;
+
+    font-size: 9px;
+
+    cursor: pointer;
+}
+
+
+/* =========================================================
+   ABOUT
+   ========================================================= */
+
+.about-card {
+
+    max-width: 750px;
+
+    margin: auto;
+
+    padding: 45px 30px;
+
+    text-align: center;
+}
+
+
+.about-logo {
+
+    font-size: 75px;
+
+    margin-bottom: 15px;
+
+    filter:
+        drop-shadow(0 0 15px var(--cyan));
+}
+
+
+.about-card h2 {
+
+    font-family: "Orbitron", sans-serif;
+
+    color: var(--cyan);
+
+    font-size: 24px;
+
+    letter-spacing: 2px;
+
+    margin-bottom: 18px;
+}
+
+
+.about-card p {
+
+    color: var(--muted);
+
+    font-size: 16px;
+
+    margin: 8px;
+}
+
+
+/* =========================================================
+   SCROLLBAR
+   ========================================================= */
+
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+
+::-webkit-scrollbar-track {
+    background: #01050a;
+}
+
+
+::-webkit-scrollbar-thumb {
+
+    background:
+        linear-gradient(
+            var(--cyan),
+            var(--blue)
+        );
+
+    border-radius: 10px;
+}
+
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 1000px) {
+
+    .motors-grid {
+        grid-template-columns:
+            repeat(2, 1fr);
+    }
+
+    .telemetry-grid {
+        grid-template-columns:
+            repeat(2, 1fr);
+    }
+}
+
+
+@media (max-width: 750px) {
+
+    .topbar {
+
+        align-items: flex-start;
+
+        flex-direction: column;
+
+    }
+
+    .navigation {
+        top: 0;
+    }
+
+    .control-grid {
+
+        grid-template-columns: 1fr;
+
+    }
+
+    .attitude-panel {
+
+        grid-column: span 1;
+
+    }
+
+    .motors-grid {
+
+        grid-template-columns: 1fr;
+
+    }
+
+}
+
+
+@media (max-width: 520px) {
+
+    main {
+        padding: 13px;
+    }
+
+    .section-header {
+
+        align-items: flex-start;
+
+        flex-direction: column;
+
+    }
+
+    .telemetry-grid {
+
+        grid-template-columns: 1fr;
+
+    }
+
+    .attitude-box {
+
+        grid-template-columns:
+            1fr;
+
+    }
+
+    .flight-controls {
+
+        flex-direction: column;
+
+    }
+
+    .start-button,
+    .stop-button {
+
+        width: 100%;
+
+    }
+
+    .login-card {
+
+        padding: 38px 23px;
+
+    }
+
+    .login-card h1 {
+
+        font-size: 42px;
+
+    }
+
+}
