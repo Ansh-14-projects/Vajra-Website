@@ -1,1 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+    <title>ANSH'S DRONE VAJRA</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<!-- ================= LOGIN ================= -->
+
+<div id="loginPage" class="page-center">
+
+    <div class="login-card">
+
+        <div class="logo">🚁⚡</div>
+
+        <h1>VAJRA</h1>
+        <p class="login-subtitle">ANSH'S DRONE CONTROL SYSTEM</p>
+
+        <div class="input-group">
+            <label>USERNAME</label>
+            <input id="username" type="text" placeholder="Enter username">
+        </div>
+
+        <div class="input-group">
+            <label>PASSWORD</label>
+            <input id="password" type="password" placeholder="Enter password">
+        </div>
+
+        <button class="primary-button" onclick="login()">
+            ENTER VAJRA
+        </button>
+
+        <p id="loginMessage" class="login-message"></p>
+
+    </div>
+
+</div>
+
+
+<!-- ================= DASHBOARD ================= -->
+
+<div id="dashboardPage" class="hidden">
+
+    <header class="topbar">
+
+        <div class="brand">
+            <span>🚁</span>
+            <div>
+                <strong>ANSH'S DRONE VAJRA</strong>
+                <small>FLIGHT CONTROL SYSTEM</small>
+            </div>
+        </div>
+
+        <div class="status-area">
+
+            <div id="bleStatus" class="status disconnected">
+                <span class="status-dot"></span>
+                DISCONNECTED
+            </div>
+
+            <button class="connect-btn" onclick="connectBLE()">
+                CONNECT BLE
+            </button>
+
+            <button class="logout-btn" onclick="logout()">
+                LOGOUT
+            </button>
+
+        </div>
+
+    </header>
+
+
+    <nav class="navigation">
+
+        <button onclick="showSection('controlSection')">CONTROL</button>
+        <button onclick="showSection('telemetrySection')">TELEMETRY</button>
+        <button onclick="showSection('settingsSection')">SETTINGS</button>
+        <button onclick="showSection('logsSection')">LOGS</button>
+        <button onclick="showSection('aboutSection')">ABOUT</button>
+
+    </nav>
+
+
+    <main>
+
+        <!-- ================= CONTROL ================= -->
+
+        <section id="controlSection" class="section active-section">
+
+            <div class="section-header">
+                <h2>CONTROL CENTER</h2>
+                <span>EASY TO CONTROL</span>
+            </div>
+
+
+            <div class="control-grid">
+
+                <!-- LEFT JOYSTICK -->
+
+                <div class="joystick-panel">
+
+                    <h3>THROTTLE + YAW</h3>
+
+                    <div
+                        id="leftJoystick"
+                        class="joystick"
+                        data-joystick="left"
+                    >
+
+                        <div class="joystick-ring"></div>
+                        <div class="joystick-cross-horizontal"></div>
+                        <div class="joystick-cross-vertical"></div>
+
+                        <div
+                            id="leftStick"
+                            class="joystick-stick">
+                            ●
+                        </div>
+
+                    </div>
+
+                    <div class="axis-readout">
+                        <div>THROTTLE: <span id="throttleValue">0</span></div>
+                        <div>YAW: <span id="yawValue">0</span></div>
+                    </div>
+
+                </div>
+
+
+                <!-- RIGHT JOYSTICK -->
+
+                <div class="joystick-panel">
+
+                    <h3>PITCH + ROLL</h3>
+
+                    <div
+                        id="rightJoystick"
+                        class="joystick"
+                        data-joystick="right"
+                    >
+
+                        <div class="joystick-ring"></div>
+                        <div class="joystick-cross-horizontal"></div>
+                        <div class="joystick-cross-vertical"></div>
+
+                        <div
+                            id="rightStick"
+                            class="joystick-stick">
+                            ●
+                        </div>
+
+                    </div>
+
+                    <div class="axis-readout">
+                        <div>PITCH: <span id="pitchValue">0</span></div>
+                        <div>ROLL: <span id="rollValue">0</span></div>
+                    </div>
+
+                </div>
+
+
+                <!-- ATTITUDE -->
+
+                <div class="attitude-panel">
+
+                    <h3>ATTITUDE</h3>
+
+                    <div class="attitude-box">
+
+                        <div>
+                            <span>ROLL</span>
+                            <strong id="attitudeRoll">0.00°</strong>
+                        </div>
+
+                        <div>
+                            <span>PITCH</span>
+                            <strong id="attitudePitch">0.00°</strong>
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- ARM CONTROLS -->
+
+            <div class="flight-controls">
+
+                <button
+                    class="start-button"
+                    onclick="sendCommand('VAJRA:START')">
+                    START / ARM
+                </button>
+
+                <button
+                    class="stop-button"
+                    onclick="stopAll()">
+                    STOP ALL
+                </button>
+
+            </div>
+
+
+            <!-- MOTOR CONTROL -->
+
+            <div class="motor-panel">
+
+                <h3>MOTOR CONTROL</h3>
+
+                <div class="motors-grid">
+
+                    <div class="motor-card">
+                        <h4>M1</h4>
+                        <span>FRONT RIGHT</span>
+
+                        <input
+                            id="m1Slider"
+                            type="range"
+                            min="900"
+                            max="2000"
+                            value="900"
+                            oninput="motorSliderChanged(1)"
+                        >
+
+                        <strong id="m1Value">900 µs</strong>
+
+                        <button onclick="sendMotor(1)">
+                            SEND
+                        </button>
+                    </div>
+
+
+                    <div class="motor-card">
+                        <h4>M2</h4>
+                        <span>REAR RIGHT</span>
+
+                        <input
+                            id="m2Slider"
+                            type="range"
+                            min="900"
+                            max="2000"
+                            value="900"
+                            oninput="motorSliderChanged(2)"
+                        >
+
+                        <strong id="m2Value">900 µs</strong>
+
+                        <button onclick="sendMotor(2)">
+                            SEND
+                        </button>
+                    </div>
+
+
+                    <div class="motor-card">
+                        <h4>M3</h4>
+                        <span>REAR LEFT</span>
+
+                        <input
+                            id="m3Slider"
+                            type="range"
+                            min="900"
+                            max="2000"
+                            value="900"
+                            oninput="motorSliderChanged(3)"
+                        >
+
+                        <strong id="m3Value">900 µs</strong>
+
+                        <button onclick="sendMotor(3)">
+                            SEND
+                        </button>
+                    </div>
+
+
+                    <div class="motor-card">
+                        <h4>M4</h4>
+                        <span>FRONT LEFT</span>
+
+                        <input
+                            id="m4Slider"
+                            type="range"
+                            min="900"
+                            max="2000"
+                            value="900"
+                            oninput="motorSliderChanged(4)"
+                        >
+
+                        <strong id="m4Value">900 µs</strong>
+
+                        <button onclick="sendMotor(4)">
+                            SEND
+                        </button>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- ================= TELEMETRY ================= -->
+
+        <section id="telemetrySection" class="section">
+
+            <div class="section-header">
+                <h2>TELEMETRY</h2>
+                <span>LIVE FLIGHT DATA</span>
+            </div>
+
+            <div class="telemetry-grid">
+
+                <div class="telemetry-card">
+                    <span>ROLL</span>
+                    <strong id="telRoll">0.00</strong>
+                    <small>deg</small>
+                </div>
+
+                <div class="telemetry-card">
+                    <span>PITCH</span>
+                    <strong id="telPitch">0.00</strong>
+                    <small>deg</small>
+                </div>
+
+                <div class="telemetry-card">
+                    <span>GYRO X</span>
+                    <strong id="telGx">0.00</strong>
+                    <small>dps</small>
+                </div>
+
+                <div class="telemetry-card">
+                    <span>GYRO Y</span>
+                    <strong id="telGy">0.00</strong>
+                    <small>dps</small>
+                </div>
+
+                <div class="telemetry-card">
+                    <span>GYRO Z</span>
+                    <strong id="telGz">0.00</strong>
+                    <small>dps</small>
+                </div>
+
+                <div class="telemetry-card">
+                    <span>M1</span>
+                    <strong id="telM1">900</strong>
+                    <small>µs</small>
+                </div>
+
+                <div class="telemetry-card">
+                    <span>M2</span>
+                    <strong id="telM2">900</strong>
+                    <small>µs</small>
+                </div>
+
+                <div class="telemetry-card">
+                    <span>M3</span>
+                    <strong id="telM3">900</strong>
+                    <small>µs</small>
+                </div>
+
+                <div class="telemetry-card">
+                    <span>M4</span>
+                    <strong id="telM4">900</strong>
+                    <small>µs</small>
+                </div>
+
+                <div class="telemetry-card">
+                    <span>ROLL PID</span>
+                    <strong id="telRollPID">0.00</strong>
+                    <small>output</small>
+                </div>
+
+                <div class="telemetry-card">
+                    <span>PITCH PID</span>
+                    <strong id="telPitchPID">0.00</strong>
+                    <small>output</small>
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- ================= SETTINGS ================= -->
+
+        <section id="settingsSection" class="section">
+
+            <div class="section-header">
+                <h2>SETTINGS</h2>
+            </div>
+
+            <div class="settings-card">
+
+                <h3>VAJRA CONNECTION</h3>
+
+                <p>BLE Device:</p>
+                <strong>ANSH'S DRONE VAJRA</strong>
+
+                <p>Service UUID:</p>
+                <code>12345678-1234-1234-1234-1234567890ab</code>
+
+                <p>RX UUID:</p>
+                <code>12345678-1234-1234-1234-1234567890ac</code>
+
+                <p>TX UUID:</p>
+                <code>12345678-1234-1234-1234-1234567890ad</code>
+
+            </div>
+
+        </section>
+
+
+        <!-- ================= LOGS ================= -->
+
+        <section id="logsSection" class="section">
+
+            <div class="section-header">
+                <h2>SYSTEM LOGS</h2>
+            </div>
+
+            <div id="logsBox" class="logs-box"></div>
+
+            <button class="secondary-button" onclick="clearLogs()">
+                CLEAR LOGS
+            </button>
+
+        </section>
+
+
+        <!-- ================= ABOUT ================= -->
+
+        <section id="aboutSection" class="section">
+
+            <div class="about-card">
+
+                <div class="about-logo">🚁⚡</div>
+
+                <h2>ANSH'S DRONE VAJRA</h2>
+
+                <p>
+                    Two-controller quadcopter flight-control project.
+                </p>
+
+                <p>
+                    Main Controller → BLE + UART
+                </p>
+
+                <p>
+                    Flight Controller → MPU6050 + ESC + PID
+                </p>
+
+                <p>
+                    Designed by Ansh's Innovation Lab
+                </p>
+
+            </div>
+
+        </section>
+
+    </main>
+
+</div>
+
+
+<script src="script.js"></script>
+
+</body>
+</html>
