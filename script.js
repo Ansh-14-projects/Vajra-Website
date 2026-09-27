@@ -1,74 +1,17 @@
 /* =========================================================
-   VAJRA WEBSITE JAVASCRIPT
-   ========================================================= */
+   VAJRA WEB BLUETOOTH CONTROL SYSTEM
+   ANSH'S DRONE 🚁⚡
+
+   BLE:
+   Service = 12345678-1234-1234-1234-1234567890ab
+   RX      = 12345678-1234-1234-1234-1234567890ac
+   TX      = 12345678-1234-1234-1234-1234567890ad
+========================================================= */
 
 
-/* ================= LOGIN ================= */
-
-function login() {
-
-    const username =
-        document.getElementById("username").value.trim();
-
-    const password =
-        document.getElementById("password").value;
-
-    const message =
-        document.getElementById("loginMessage");
-
-
-    if (username === "VAJRA" && password === "VAJRA") {
-
-        document.getElementById("loginPage")
-            .classList.add("hidden");
-
-        document.getElementById("dashboardPage")
-            .classList.remove("hidden");
-
-        addLog("Login successful.");
-
-    } else {
-
-        message.textContent =
-            "INVALID USERNAME OR PASSWORD";
-
-    }
-}
-
-
-function logout() {
-
-    disconnectBLE();
-
-    document.getElementById("dashboardPage")
-        .classList.add("hidden");
-
-    document.getElementById("loginPage")
-        .classList.remove("hidden");
-
-    document.getElementById("username").value = "";
-    document.getElementById("password").value = "";
-    document.getElementById("loginMessage").textContent = "";
-}
-
-
-/* ================= NAVIGATION ================= */
-
-function showSection(sectionId) {
-
-    const sections =
-        document.querySelectorAll(".section");
-
-    sections.forEach(section => {
-        section.classList.remove("active-section");
-    });
-
-    document.getElementById(sectionId)
-        .classList.add("active-section");
-}
-
-
-/* ================= BLE ================= */
+/* =========================================================
+   BLE UUIDS
+========================================================= */
 
 const SERVICE_UUID =
     "12345678-1234-1234-1234-1234567890ab";
@@ -80,32 +23,388 @@ const TX_UUID =
     "12345678-1234-1234-1234-1234567890ad";
 
 
-let bluetoothDevice = null;
+/* =========================================================
+   BLE VARIABLES
+========================================================= */
+
+let bleDevice = null;
+let bleServer = null;
+let bleService = null;
+
 let rxCharacteristic = null;
 let txCharacteristic = null;
+
+let bleConnected = false;
+
+const encoder = new TextEncoder();
+const decoder = new TextDecoder();
+
+
+/* =========================================================
+   FLIGHT STATE
+========================================================= */
+
+let armed = false;
+
+let motors = {
+    M1: 900,
+    M2: 900,
+    M3: 900,
+    M4: 900
+};
+
+let telemetry = {
+    roll: 0,
+    pitch: 0,
+    gyroX: 0,
+    gyroY: 0,
+    gyroZ: 0,
+    battery: 11.1
+};
+
+
+/* =========================================================
+   DOM
+========================================================= */
+
+const loginPage =
+    document.getElementById("loginPage");
+
+const app =
+    document.getElementById("app");
+
+const loginButton =
+    document.getElementById("loginButton");
+
+const loginError =
+    document.getElementById("loginError");
+
+const username =
+    document.getElementById("username");
+
+const password =
+    document.getElementById("password");
+
+const connectBleButton =
+    document.getElementById("connectBleButton");
+
+const disconnectBleButton =
+    document.getElementById("disconnectBleButton");
+
+const logoutButton =
+    document.getElementById("logoutButton");
+
+const bleBadge =
+    document.getElementById("bleBadge");
+
+const armedBadge =
+    document.getElementById("armedBadge");
+
+const armButton =
+    document.getElementById("armButton");
+
+const stopButton =
+    document.getElementById("stopButton");
+
+const systemIndicator =
+    document.getElementById("systemIndicator");
+
+const logContainer =
+    document.getElementById("logContainer");
+
+const clearLogsButton =
+    document.getElementById("clearLogsButton");
+
+
+/* =========================================================
+   LOGIN
+========================================================= */
+
+loginButton.addEventListener("click", login);
+
+password.addEventListener("keydown", function(event) {
+
+    if (event.key === "Enter") {
+        login();
+    }
+
+});
+
+
+username.addEventListener("keydown", function(event) {
+
+    if (event.key === "Enter") {
+        login();
+    }
+
+});
+
+
+function login() {
+
+    const user =
+        username.value.trim();
+
+    const pass =
+        password.value.trim();
+
+
+    if (user === "VAJRA" && pass === "VAJRA") {
+
+        loginPage.classList.add("hidden");
+
+        app.classList.remove("hidden");
+
+        addLog(
+            "AUTH",
+            "VAJRA operator authentication successful"
+        );
+
+        systemIndicator.textContent =
+            "SYSTEM READY";
+
+        startSimulation();
+
+    } else {
+
+        loginError.textContent =
+            "INVALID OPERATOR ID OR ACCESS KEY";
+
+    }
+
+}
+
+
+/* =========================================================
+   NAVIGATION
+========================================================= */
+
+const navButtons =
+    document.querySelectorAll(".nav-button");
+
+const views =
+    document.querySelectorAll(".view");
+
+
+navButtons.forEach(button => {
+
+    button.addEventListener("click", function() {
+
+        const target =
+            button.dataset.view;
+
+        navButtons.forEach(btn => {
+            btn.classList.remove("active");
+        });
+
+        button.classList.add("active");
+
+        views.forEach(view => {
+            view.classList.remove("active-view");
+        });
+
+        const targetView =
+            document.getElementById(target);
+
+        if (targetView) {
+            targetView.classList.add("active-view");
+        }
+
+        if (target === "telemetry") {
+            resizeChart();
+        }
+
+    });
+
+});
+
+
+/* =========================================================
+   LOGGING
+========================================================= */
+
+function addLog(type, message) {
+
+    if (!logContainer) {
+        return;
+    }
+
+    const entry =
+        document.createElement("div");
+
+    entry.className =
+        "log-entry";
+
+    const time =
+        new Date().toLocaleTimeString();
+
+    entry.innerHTML = `
+        <span class="log-time">${time}</span>
+        <span class="log-type">${escapeHtml(type)}</span>
+        <span class="log-message">${escapeHtml(message)}</span>
+    `;
+
+    logContainer.prepend(entry);
+
+}
+
+
+function escapeHtml(value) {
+
+    return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+
+}
+
+
+clearLogsButton.addEventListener("click", function() {
+
+    logContainer.innerHTML = "";
+
+    addLog(
+        "SYSTEM",
+        "Log buffer cleared"
+    );
+
+});
+
+
+/* =========================================================
+   BLE SUPPORT CHECK
+========================================================= */
+
+async function checkBluetoothSupport() {
+
+    if (!window.isSecureContext) {
+
+        addLog(
+            "BLE ERROR",
+            "Website is not running in a secure context"
+        );
+
+        systemIndicator.textContent =
+            "HTTPS REQUIRED";
+
+        return false;
+    }
+
+
+    if (!navigator.bluetooth) {
+
+        addLog(
+            "BLE ERROR",
+            "Web Bluetooth is not supported by this browser"
+        );
+
+        systemIndicator.textContent =
+            "BLE UNSUPPORTED";
+
+        return false;
+    }
+
+
+    try {
+
+        if (navigator.bluetooth.getAvailability) {
+
+            const available =
+                await navigator.bluetooth.getAvailability();
+
+            if (!available) {
+
+                addLog(
+                    "BLE ERROR",
+                    "Bluetooth is unavailable on this device/browser"
+                );
+
+                systemIndicator.textContent =
+                    "BLUETOOTH UNAVAILABLE";
+
+                return false;
+            }
+
+        }
+
+    } catch (error) {
+
+        addLog(
+            "BLE",
+            "Could not determine Bluetooth availability"
+        );
+
+    }
+
+
+    return true;
+}
+
+
+/* =========================================================
+   CONNECT BLE
+========================================================= */
+
+connectBleButton.addEventListener(
+    "click",
+    connectBLE
+);
 
 
 async function connectBLE() {
 
+    addLog(
+        "BLE",
+        "CONNECT BLE button pressed"
+    );
+
+    systemIndicator.textContent =
+        "OPENING BLUETOOTH...";
+
+
+    const supported =
+        await checkBluetoothSupport();
+
+    if (!supported) {
+
+        alert(
+            "Web Bluetooth is unavailable.\n\n" +
+            "Use a supported browser such as Chrome or Edge " +
+            "and open the website using HTTPS."
+        );
+
+        return;
+    }
+
+
     try {
 
-        if (!navigator.bluetooth) {
-
-            alert(
-                "Web Bluetooth is not supported in this browser."
-            );
-
-            return;
-        }
+        addLog(
+            "BLE",
+            "Opening Bluetooth device chooser..."
+        );
 
 
-        addLog("Opening Bluetooth device chooser...");
+        /*
+         * IMPORTANT:
+         * This call is directly inside the button
+         * event chain so the browser keeps the
+         * required user activation.
+         */
 
-
-        bluetoothDevice =
+        bleDevice =
             await navigator.bluetooth.requestDevice({
 
-                acceptAllDevices: true,
+                filters: [
+                    {
+                        name: "Ansh's Drone VAJRA 🚁⚡"
+                    },
+                    {
+                        namePrefix: "VAJRA"
+                    }
+                ],
 
                 optionalServices: [
                     SERVICE_UUID
@@ -114,833 +413,726 @@ async function connectBLE() {
             });
 
 
+        if (!bleDevice) {
+
+            throw new Error(
+                "No Bluetooth device selected"
+            );
+        }
+
+
         addLog(
+            "BLE",
             "Selected device: " +
-            bluetoothDevice.name
+            (bleDevice.name || "Unknown")
         );
 
 
-        bluetoothDevice.addEventListener(
+        bleDevice.addEventListener(
             "gattserverdisconnected",
-            onBLEDisconnected
+            handleBLEDisconnected
         );
 
 
-        const server =
-            await bluetoothDevice.gatt.connect();
+        systemIndicator.textContent =
+            "CONNECTING GATT...";
 
 
-        addLog("BLE GATT connected.");
+        addLog(
+            "BLE",
+            "Connecting to GATT server..."
+        );
 
 
-        const service =
-            await server.getPrimaryService(SERVICE_UUID);
+        if (!bleDevice.gatt) {
+
+            throw new Error(
+                "This Bluetooth device does not expose GATT"
+            );
+        }
+
+
+        bleServer =
+            await bleDevice.gatt.connect();
+
+
+        addLog(
+            "BLE",
+            "GATT connection established"
+        );
+
+
+        bleService =
+            await bleServer.getPrimaryService(
+                SERVICE_UUID
+            );
+
+
+        addLog(
+            "BLE",
+            "VAJRA service found"
+        );
 
 
         rxCharacteristic =
-            await service.getCharacteristic(RX_UUID);
+            await bleService.getCharacteristic(
+                RX_UUID
+            );
 
 
         txCharacteristic =
-            await service.getCharacteristic(TX_UUID);
+            await bleService.getCharacteristic(
+                TX_UUID
+            );
 
+
+        addLog(
+            "BLE",
+            "RX and TX characteristics found"
+        );
+
+
+        /*
+         * TX is ESP32 → website.
+         */
 
         await txCharacteristic.startNotifications();
 
 
         txCharacteristic.addEventListener(
             "characteristicvaluechanged",
-            handleBLEData
+            handleBLENotification
         );
 
-
-        setBLEStatus(true);
-
-        addLog("VAJRA connected successfully.");
-
-    } catch (error) {
-
-        console.error(error);
 
         addLog(
-            "BLE connection error: " +
-            error.message
+            "BLE",
+            "Telemetry notifications enabled"
         );
 
-        setBLEStatus(false);
-    }
-}
+
+        bleConnected = true;
+
+        updateBLEUI();
 
 
-function onBLEDisconnected() {
+        systemIndicator.textContent =
+            "VAJRA BLE CONNECTED";
 
-    addLog("VAJRA BLE disconnected.");
-
-    rxCharacteristic = null;
-    txCharacteristic = null;
-
-    setBLEStatus(false);
-}
-
-
-function disconnectBLE() {
-
-    try {
-
-        if (bluetoothDevice &&
-            bluetoothDevice.gatt.connected) {
-
-            bluetoothDevice.gatt.disconnect();
-        }
-
-    } catch (error) {
-
-        console.error(error);
-    }
-
-
-    rxCharacteristic = null;
-    txCharacteristic = null;
-
-    setBLEStatus(false);
-}
-
-
-function setBLEStatus(connected) {
-
-    const status =
-        document.getElementById("bleStatus");
-
-    if (connected) {
-
-        status.className =
-            "status connected";
-
-        status.innerHTML =
-            '<span class="status-dot"></span>CONNECTED';
-
-    } else {
-
-        status.className =
-            "status disconnected";
-
-        status.innerHTML =
-            '<span class="status-dot"></span>DISCONNECTED';
-    }
-}
-
-
-/* ================= BLE SEND ================= */
-
-async function sendCommand(command) {
-
-    addLog("TX → " + command);
-
-
-    if (!rxCharacteristic) {
-
-        addLog("Not connected to VAJRA.");
-
-        return;
-    }
-
-
-    try {
-
-        const encoder =
-            new TextEncoder();
-
-        const data =
-            encoder.encode(command);
-
-
-        await rxCharacteristic.writeValue(data);
-
-    } catch (error) {
 
         addLog(
-            "TX error: " +
-            error.message
+            "BLE",
+            "VAJRA connected successfully"
         );
-
-    }
-}
-
-
-/* ================= START / STOP ================= */
-
-async function stopAll() {
-
-    await sendCommand("VAJRA:STOP");
-
-    resetAllJoysticks();
-
-    [1, 2, 3, 4].forEach(number => {
-
-        const slider =
-            document.getElementById(
-                "m" + number + "Slider"
-            );
-
-        slider.value = 900;
-
-        motorSliderChanged(number);
-
-    });
-}
-
-
-/* ================= MOTOR CONTROL ================= */
-
-function motorSliderChanged(number) {
-
-    const slider =
-        document.getElementById(
-            "m" + number + "Slider"
-        );
-
-    const valueElement =
-        document.getElementById(
-            "m" + number + "Value"
-        );
-
-
-    valueElement.textContent =
-        slider.value + " µs";
-}
-
-
-async function sendMotor(number) {
-
-    const slider =
-        document.getElementById(
-            "m" + number + "Slider"
-        );
-
-
-    const value =
-        Number(slider.value);
-
-
-    await sendCommand(
-        "VAJRA:M" +
-        number +
-        " " +
-        value +
-        "us"
-    );
-}
-
-
-/* ================= JOYSTICKS ================= */
-
-let joystickState = {
-
-    throttle: 0,
-    yaw: 0,
-    pitch: 0,
-    roll: 0
-
-};
-
-
-let joystickTimer = null;
-
-
-function setupJoystick(
-    joystickId,
-    stickId,
-    type
-) {
-
-    const joystick =
-        document.getElementById(joystickId);
-
-    const stick =
-        document.getElementById(stickId);
-
-
-    let active = false;
-
-
-    function move(clientX, clientY) {
-
-        const rect =
-            joystick.getBoundingClientRect();
-
-
-        const centerX =
-            rect.left + rect.width / 2;
-
-        const centerY =
-            rect.top + rect.height / 2;
-
-
-        let x =
-            clientX - centerX;
-
-        let y =
-            clientY - centerY;
-
-
-        const maxDistance =
-            rect.width * 0.35;
-
-
-        const distance =
-            Math.sqrt(
-                x * x +
-                y * y
-            );
-
-
-        if (distance > maxDistance) {
-
-            const scale =
-                maxDistance / distance;
-
-            x *= scale;
-            y *= scale;
-        }
-
-
-        stick.style.left =
-            "calc(50% + " +
-            x +
-            "px)";
-
-        stick.style.top =
-            "calc(50% + " +
-            y +
-            "px)";
-
-
-        const normalizedX =
-            Math.round(
-                (x / maxDistance) * 100
-            );
-
-        const normalizedY =
-            Math.round(
-                (y / maxDistance) * 100
-            );
-
-
-        if (type === "left") {
-
-            joystickState.yaw =
-                clamp(
-                    normalizedX,
-                    -100,
-                    100
-                );
-
-
-            let throttle =
-                -normalizedY;
-
-
-            throttle =
-                clamp(
-                    throttle,
-                    -100,
-                    100
-                );
-
-
-            /*
-                Throttle only uses 0..100.
-                Pulling downward = more throttle.
-            */
-
-            joystickState.throttle =
-                clamp(
-                    ((throttle + 100) / 2),
-                    0,
-                    100
-                );
-
-
-            document.getElementById(
-                "throttleValue"
-            ).textContent =
-                joystickState.throttle;
-
-
-            document.getElementById(
-                "yawValue"
-            ).textContent =
-                joystickState.yaw;
-
-        }
-
-
-        if (type === "right") {
-
-            joystickState.roll =
-                clamp(
-                    normalizedX,
-                    -100,
-                    100
-                );
-
-
-            joystickState.pitch =
-                clamp(
-                    -normalizedY,
-                    -100,
-                    100
-                );
-
-
-            document.getElementById(
-                "rollValue"
-            ).textContent =
-                joystickState.roll;
-
-
-            document.getElementById(
-                "pitchValue"
-            ).textContent =
-                joystickState.pitch;
-
-        }
-
-
-        sendJoystickCommand();
-    }
-
-
-    function release() {
-
-        active = false;
-
-        stick.style.left = "50%";
-        stick.style.top = "50%";
-
-
-        if (type === "left") {
-
-            joystickState.throttle = 0;
-            joystickState.yaw = 0;
-
-            document.getElementById(
-                "throttleValue"
-            ).textContent = "0";
-
-            document.getElementById(
-                "yawValue"
-            ).textContent = "0";
-
-        } else {
-
-            joystickState.pitch = 0;
-            joystickState.roll = 0;
-
-            document.getElementById(
-                "pitchValue"
-            ).textContent = "0";
-
-            document.getElementById(
-                "rollValue"
-            ).textContent = "0";
-
-        }
-
-
-        sendJoystickCommand();
-    }
-
-
-    joystick.addEventListener(
-        "pointerdown",
-        event => {
-
-            active = true;
-
-            joystick.setPointerCapture(
-                event.pointerId
-            );
-
-            move(
-                event.clientX,
-                event.clientY
-            );
-        }
-    );
-
-
-    joystick.addEventListener(
-        "pointermove",
-        event => {
-
-            if (!active) {
-                return;
-            }
-
-            move(
-                event.clientX,
-                event.clientY
-            );
-        }
-    );
-
-
-    joystick.addEventListener(
-        "pointerup",
-        release
-    );
-
-
-    joystick.addEventListener(
-        "pointercancel",
-        release
-    );
-
-
-    joystick.addEventListener(
-        "lostpointercapture",
-        () => {
-            if (active) {
-                release();
-            }
-        }
-    );
-}
-
-
-function clamp(value, min, max) {
-
-    return Math.max(
-        min,
-        Math.min(max, value)
-    );
-}
-
-
-function sendJoystickCommand() {
-
-    const command =
-        "VAJRA:JOY," +
-        joystickState.throttle +
-        "," +
-        joystickState.yaw +
-        "," +
-        joystickState.pitch +
-        "," +
-        joystickState.roll;
-
-
-    if (!joystickTimer) {
-
-        joystickTimer =
-            setTimeout(
-                async () => {
-
-                    joystickTimer = null;
-
-                    await sendCommand(command);
-
-                },
-                50
-            );
-    }
-}
-
-
-function resetAllJoysticks() {
-
-    joystickState = {
-
-        throttle: 0,
-        yaw: 0,
-        pitch: 0,
-        roll: 0
-
-    };
-
-
-    document.getElementById(
-        "leftStick"
-    ).style.left = "50%";
-
-    document.getElementById(
-        "leftStick"
-    ).style.top = "50%";
-
-
-    document.getElementById(
-        "rightStick"
-    ).style.left = "50%";
-
-    document.getElementById(
-        "rightStick"
-    ).style.top = "50%";
-
-
-    document.getElementById(
-        "throttleValue"
-    ).textContent = "0";
-
-    document.getElementById(
-        "yawValue"
-    ).textContent = "0";
-
-    document.getElementById(
-        "pitchValue"
-    ).textContent = "0";
-
-    document.getElementById(
-        "rollValue"
-    ).textContent = "0";
-}
-
-
-/* ================= TELEMETRY ================= */
-
-function handleBLEData(event) {
-
-    try {
-
-        const decoder =
-            new TextDecoder();
-
-        const line =
-            decoder.decode(
-                event.target.value
-            ).trim();
-
-
-        addLog("RX ← " + line);
-
-
-        if (!line.startsWith("TEL,")) {
-            return;
-        }
-
-
-        const data =
-            line.split(",");
 
 
         /*
-            Expected 18 fields:
+         * Tell ESP32 that the website is ready.
+         */
 
-            0  TEL
-            1  roll
-            2  pitch
-            3  gx
-            4  gy
-            5  gz
-            6  m1
-            7  m2
-            8  m3
-            9  m4
-            10 rollP
-            11 rollI
-            12 rollD
-            13 rollPID
-            14 pitchP
-            15 pitchI
-            16 pitchD
-            17 pitchPID
-        */
+        await sendCommand(
+            "VAJRA:HELLO"
+        );
 
-
-        if (data.length < 18) {
-            return;
-        }
-
-
-        const roll =
-            Number(data[1]);
-
-        const pitch =
-            Number(data[2]);
-
-        const gx =
-            Number(data[3]);
-
-        const gy =
-            Number(data[4]);
-
-        const gz =
-            Number(data[5]);
-
-        const m1 =
-            Number(data[6]);
-
-        const m2 =
-            Number(data[7]);
-
-        const m3 =
-            Number(data[8]);
-
-        const m4 =
-            Number(data[9]);
-
-        const rollPID =
-            Number(data[13]);
-
-        const pitchPID =
-            Number(data[17]);
-
-
-        document.getElementById(
-            "attitudeRoll"
-        ).textContent =
-            roll.toFixed(2) + "°";
-
-
-        document.getElementById(
-            "attitudePitch"
-        ).textContent =
-            pitch.toFixed(2) + "°";
-
-
-        document.getElementById(
-            "telRoll"
-        ).textContent =
-            roll.toFixed(2);
-
-
-        document.getElementById(
-            "telPitch"
-        ).textContent =
-            pitch.toFixed(2);
-
-
-        document.getElementById(
-            "telGx"
-        ).textContent =
-            gx.toFixed(2);
-
-
-        document.getElementById(
-            "telGy"
-        ).textContent =
-            gy.toFixed(2);
-
-
-        document.getElementById(
-            "telGz"
-        ).textContent =
-            gz.toFixed(2);
-
-
-        document.getElementById(
-            "telM1"
-        ).textContent =
-            m1;
-
-
-        document.getElementById(
-            "telM2"
-        ).textContent =
-            m2;
-
-
-        document.getElementById(
-            "telM3"
-        ).textContent =
-            m3;
-
-
-        document.getElementById(
-            "telM4"
-        ).textContent =
-            m4;
-
-
-        document.getElementById(
-            "telRollPID"
-        ).textContent =
-            rollPID.toFixed(2);
-
-
-        document.getElementById(
-            "telPitchPID"
-        ).textContent =
-            pitchPID.toFixed(2);
 
     } catch (error) {
 
         console.error(
-            "Telemetry parse error:",
+            "VAJRA BLE ERROR:",
             error
         );
+
+
+        bleConnected = false;
+
+        updateBLEUI();
+
+
+        systemIndicator.textContent =
+            "BLE CONNECTION FAILED";
+
+
+        addLog(
+            "BLE ERROR",
+            getBLEErrorMessage(error)
+        );
+
+
+        /*
+         * Do not show an ugly browser error.
+         * Give the user a useful message.
+         */
+
+        alert(
+            "VAJRA BLE CONNECTION FAILED\n\n" +
+            getBLEErrorMessage(error)
+        );
+
     }
+
 }
 
 
-/* ================= LOGS ================= */
+/* =========================================================
+   BLE ERROR MESSAGE
+========================================================= */
 
-function addLog(message) {
+function getBLEErrorMessage(error) {
 
-    const box =
-        document.getElementById("logsBox");
+    if (!error) {
+        return "Unknown Bluetooth error";
+    }
 
 
-    if (!box) {
+    if (error.name === "NotFoundError") {
+
+        return (
+            "No VAJRA device was selected.\n" +
+            "Make sure the ESP32-C3 is powered and advertising."
+        );
+
+    }
+
+
+    if (error.name === "SecurityError") {
+
+        return (
+            "Bluetooth permission was blocked.\n" +
+            "Check browser permissions and HTTPS."
+        );
+
+    }
+
+
+    if (error.name === "NetworkError") {
+
+        return (
+            "Could not connect to the VAJRA GATT server.\n" +
+            "Make sure the ESP32-C3 is powered."
+        );
+
+    }
+
+
+    if (error.name === "NotSupportedError") {
+
+        return (
+            "This browser/device does not support the required BLE feature."
+        );
+
+    }
+
+
+    return (
+        error.message ||
+        error.name ||
+        "Unknown Bluetooth error"
+    );
+
+}
+
+
+/* =========================================================
+   DISCONNECT
+========================================================= */
+
+disconnectBleButton.addEventListener(
+    "click",
+    disconnectBLE
+);
+
+
+async function disconnectBLE() {
+
+    try {
+
+        if (
+            bleDevice &&
+            bleDevice.gatt &&
+            bleDevice.gatt.connected
+        ) {
+
+            bleDevice.gatt.disconnect();
+
+        }
+
+    } catch (error) {
+
+        console.error(error);
+
+    }
+
+
+    bleConnected = false;
+
+    rxCharacteristic = null;
+    txCharacteristic = null;
+    bleService = null;
+    bleServer = null;
+
+    updateBLEUI();
+
+
+    systemIndicator.textContent =
+        "BLE DISCONNECTED";
+
+
+    addLog(
+        "BLE",
+        "VAJRA BLE disconnected"
+    );
+
+}
+
+
+/* =========================================================
+   BLE DISCONNECTED EVENT
+========================================================= */
+
+function handleBLEDisconnected() {
+
+    bleConnected = false;
+
+    rxCharacteristic = null;
+    txCharacteristic = null;
+    bleService = null;
+    bleServer = null;
+
+    updateBLEUI();
+
+
+    systemIndicator.textContent =
+        "BLE DISCONNECTED";
+
+
+    addLog(
+        "BLE",
+        "VAJRA device disconnected"
+    );
+
+
+    /*
+     * Always return motors to safe website state.
+     */
+
+    forceStopMotors();
+
+}
+
+
+/* =========================================================
+   BLE UI
+========================================================= */
+
+function updateBLEUI() {
+
+    if (bleConnected) {
+
+        bleBadge.textContent =
+            "● BLE CONNECTED";
+
+        bleBadge.classList.remove(
+            "disconnected"
+        );
+
+        bleBadge.classList.add(
+            "connected"
+        );
+
+
+        connectBleButton.classList.add(
+            "hidden"
+        );
+
+        disconnectBleButton.classList.remove(
+            "hidden"
+        );
+
+    } else {
+
+        bleBadge.textContent =
+            "● BLE OFFLINE";
+
+        bleBadge.classList.remove(
+            "connected"
+        );
+
+        bleBadge.classList.add(
+            "disconnected"
+        );
+
+
+        connectBleButton.classList.remove(
+            "hidden"
+        );
+
+        disconnectBleButton.classList.add(
+            "hidden"
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   BLE SEND
+========================================================= */
+
+async function sendCommand(command) {
+
+    addLog(
+        "TX",
+        command
+    );
+
+
+    if (!bleConnected) {
+
+        addLog(
+            "TX",
+            "BLE offline - command not transmitted"
+        );
+
+        return false;
+    }
+
+
+    if (!rxCharacteristic) {
+
+        addLog(
+            "BLE ERROR",
+            "RX characteristic is unavailable"
+        );
+
+        return false;
+    }
+
+
+    try {
+
+        const data =
+            encoder.encode(command + "\n");
+
+
+        if (
+            rxCharacteristic.properties &&
+            rxCharacteristic.properties.writeWithoutResponse
+        ) {
+
+            await rxCharacteristic.writeValueWithoutResponse(
+                data
+            );
+
+        } else {
+
+            await rxCharacteristic.writeValue(
+                data
+            );
+
+        }
+
+
+        return true;
+
+    } catch (error) {
+
+        console.error(
+            "BLE WRITE ERROR:",
+            error
+        );
+
+
+        addLog(
+            "BLE ERROR",
+            "TX failed: " +
+            (error.message || error)
+        );
+
+
+        return false;
+    }
+
+}
+
+
+/* =========================================================
+   BLE NOTIFICATION
+========================================================= */
+
+function handleBLENotification(event) {
+
+    try {
+
+        const text =
+            decoder.decode(event.target.value);
+
+
+        const lines =
+            text.split(/\r?\n/);
+
+
+        lines.forEach(line => {
+
+            const message =
+                line.trim();
+
+
+            if (!message) {
+                return;
+            }
+
+
+            addLog(
+                "RX",
+                message
+            );
+
+
+            parseTelemetry(message);
+
+        });
+
+
+    } catch (error) {
+
+        console.error(
+            "Notification parsing error:",
+            error
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   TELEMETRY PARSER
+========================================================= */
+
+/*
+Expected ESP32 message:
+
+TEL,ROLL,PITCH,GX,GY,GZ,BATTERY
+
+Example:
+
+TEL,2.30,-1.20,0.04,-0.02,0.10,11.35
+*/
+
+function parseTelemetry(message) {
+
+    if (!message.startsWith("TEL,")) {
         return;
     }
 
 
-    const time =
-        new Date().toLocaleTimeString();
+    const parts =
+        message.split(",");
 
 
-    const line =
-        document.createElement("div");
+    if (parts.length < 7) {
+        return;
+    }
 
 
-    line.textContent =
-        "[" +
-        time +
-        "] " +
-        message;
+    const roll =
+        Number(parts[1]);
+
+    const pitch =
+        Number(parts[2]);
+
+    const gx =
+        Number(parts[3]);
+
+    const gy =
+        Number(parts[4]);
+
+    const gz =
+        Number(parts[5]);
+
+    const battery =
+        Number(parts[6]);
 
 
-    box.appendChild(line);
+    if (!Number.isNaN(roll)) {
+        telemetry.roll = roll;
+    }
+
+    if (!Number.isNaN(pitch)) {
+        telemetry.pitch = pitch;
+    }
+
+    if (!Number.isNaN(gx)) {
+        telemetry.gyroX = gx;
+    }
+
+    if (!Number.isNaN(gy)) {
+        telemetry.gyroY = gy;
+    }
+
+    if (!Number.isNaN(gz)) {
+        telemetry.gyroZ = gz;
+    }
+
+    if (!Number.isNaN(battery)) {
+        telemetry.battery = battery;
+    }
 
 
-    box.scrollTop =
-        box.scrollHeight;
+    updateTelemetryUI();
+
 }
 
 
-function clearLogs() {
+/* =========================================================
+   TELEMETRY UI
+========================================================= */
+
+function updateTelemetryUI() {
 
     document.getElementById(
-        "logsBox"
-    ).innerHTML = "";
+        "rollValue"
+    ).textContent =
+        telemetry.roll.toFixed(1) + "°";
+
+
+    document.getElementById(
+        "pitchValue"
+    ).textContent =
+        telemetry.pitch.toFixed(1) + "°";
+
+
+    document.getElementById(
+        "telemetryRoll"
+    ).textContent =
+        telemetry.roll.toFixed(1) + "°";
+
+
+    document.getElementById(
+        "telemetryPitch"
+    ).textContent =
+        telemetry.pitch.toFixed(1) + "°";
+
+
+    document.getElementById(
+        "gyroX"
+    ).textContent =
+        telemetry.gyroX.toFixed(2);
+
+
+    document.getElementById(
+        "gyroY"
+    ).textContent =
+        telemetry.gyroY.toFixed(2);
+
+
+    document.getElementById(
+        "gyroZ"
+    ).textContent =
+        telemetry.gyroZ.toFixed(2);
+
+
+    document.getElementById(
+        "batteryValue"
+    ).textContent =
+        telemetry.battery.toFixed(2) + " V";
+
+
+    document.getElementById(
+        "rollPid"
+    ).textContent =
+        telemetry.roll.toFixed(2);
+
+
+    document.getElementById(
+        "pitchPid"
+    ).textContent =
+        telemetry.pitch.toFixed(2);
+
+
+    /*
+     * Rotate artificial horizon.
+     */
+
+    const horizon =
+        document.getElementById("horizon");
+
+
+    horizon.style.transform =
+        `rotate(${-telemetry.roll}deg) translateY(${telemetry.pitch * 2}px)`;
+
+
+    addChartPoint(
+        telemetry.roll,
+        telemetry.pitch
+    );
+
 }
 
 
-/* ================= STARTUP ================= */
+/* =========================================================
+   ARM / DISARM
+========================================================= */
 
-document.addEventListener(
-    "DOMContentLoaded",
-    () => {
-
-        setupJoystick(
-            "leftJoystick",
-            "leftStick",
-            "left"
-        );
-
-
-        setupJoystick(
-            "rightJoystick",
-            "rightStick",
-            "right"
-        );
-
-
-        setBLEStatus(false);
-
-        addLog(
-            "VAJRA website initialized."
-        );
-    }
+armButton.addEventListener(
+    "click",
+    toggleArm
 );
+
+
+async function toggleArm() {
+
+    if (!armed) {
+
+        /*
+         * IMPORTANT:
+         * Website does NOT directly control
+         * motors. ESP32 must implement the
+         * actual safety logic.
+         */
+
+        const success =
+            await sendCommand(
+                "VAJRA:START"
+            );
+
+
+        if (success || !bleConnected) {
+
+            armed = true;
+
+            armedBadge.textContent =
+                "● ARMED";
+
+            armedBadge.classList.remove(
+                "disarmed"
+            );
+
+            armedBadge.classList.add(
+                "armed"
+            );
+
+            armButton.textContent =
+                "DISARM";
+
+            addLog(
+                "FLIGHT",
+                "ARM / START command issued"
+            );
+
+        }
+
+    } else {
+
+        await sendCommand(
+            "VAJRA:STOP"
+        );
+
+
+        armed = false;
+
+        armedBadge.textContent =
+            "● DISARMED";
+
+        armedBadge.cla
